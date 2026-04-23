@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
+using System.Text.Json;
 using Lucene.Net.DocumentMapper.Helpers;
 using Lucene.Net.DocumentMapper.Interfaces;
 using Lucene.Net.Documents;
-using Newtonsoft.Json;
 
 namespace Lucene.Net.DocumentMapper.FieldMappers
 {
@@ -18,7 +18,7 @@ namespace Lucene.Net.DocumentMapper.FieldMappers
 
         public Field MapToField(PropertyInfo propertyInfo, object value, string name)
         {
-            return new StringField(name, JsonConvert.SerializeObject(value), GetStore(propertyInfo));
+            return new StringField(name, JsonSerializer.Serialize(value), GetStore(propertyInfo));
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace Lucene.Net.DocumentMapper.FieldMappers
         /// <returns></returns>
         public object? MapFromField(Field field)
         {
-            return JsonConvert.DeserializeObject(field.GetStringValue());
+            return JsonSerializer.Deserialize<object>(field.GetStringValue());
         }
     }
 }
