@@ -29,7 +29,9 @@ namespace Lucene.Net.DocumentMapper.Helpers
             return typeof(IDictionary).IsAssignableFrom(property.PropertyType) ||
                    (property.PropertyType.IsGenericType &&
                     (property.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>) ||
-                     property.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>)));
+                     property.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>))) ||
+                   property.PropertyType.GetInterfaces().Any(i =>
+                       i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
         }
 
         /// <summary>
