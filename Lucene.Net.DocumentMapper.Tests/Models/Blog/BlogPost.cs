@@ -30,6 +30,7 @@ namespace Lucene.Net.DocumentMapper.Tests.Models
         public EnumCategory Category3 { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public IDictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
     }
 
     public enum EnumCategory

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -21,6 +22,23 @@ namespace Lucene.Net.DocumentMapper.Helpers
                    @type != typeof(String) &&
                    @type != typeof(string) &&
                    @type != typeof(byte[]);
+        }
+
+        public static bool IsPropertyADictionary(this PropertyInfo property)
+        {
+            return typeof(IDictionary).IsAssignableFrom(property.PropertyType) ||
+                   (property.PropertyType.IsGenericType &&
+                    (property.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>) ||
+                     property.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>)));
+        }
+
+        /// <summary>
+        /// Returns the key and value types of a dictionary property as (TKey, TValue).
+        /// </summary>
+        public static (Type KeyType, Type ValueType) GetDictionaryTypes(this PropertyInfo propertyInfo)
+        {
+            var args = propertyInfo.PropertyType.GetGenericArguments();
+            return (args[0], args[1]);
         }
 
         public static bool IsPrimitiveType(this PropertyInfo property)

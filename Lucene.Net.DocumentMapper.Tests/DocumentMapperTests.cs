@@ -300,8 +300,35 @@ namespace Lucene.Net.DocumentMapper.Tests
                 Assert.Equal(mappedBlogPost.Tags[i].Id, blogPost.Tags[i].Id);
                 Assert.Equal(mappedBlogPost.Tags[i].Name, blogPost.Tags[i].Name);
             }
-        }        
-        
+        }
+
+        [Fact]
+        public void Test_Dictionary_Complex_Type_Fields()
+        {
+            var documentMapper = _serviceProvider.GetRequiredService<IDocumentMapper>();
+            var blogPost = new BlogPost
+            {
+               Metadata = new Dictionary<string, string>
+               {
+                   { "Key1", "Value1" },
+                   { "Key2", "Value2" },
+                   { "Key3", "Value3" }
+               }
+            };
+
+            var document = documentMapper.Map(blogPost);
+            var fields = document.Fields.Where(x => x.Name.StartsWith("Metadata"));
+            Assert.Equal(3, fields.Count());
+            Assert.All(fields, field => field.Name.Equals("Metadata"));
+
+            var mappedBlogPost = documentMapper.Map<BlogPost>(document);
+            for (var i = 0; i < blogPost.Metadata.Count; i++)
+            {
+                var key = blogPost.Metadata.Keys.ElementAt(i);
+                Assert.Equal(blogPost.Metadata[key], mappedBlogPost.Metadata[key]);
+            }
+        }
+
         [Fact]
         public void Test_BinaryArray_Fields()
         {

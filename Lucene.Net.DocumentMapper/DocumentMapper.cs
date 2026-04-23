@@ -46,6 +46,53 @@ namespace Lucene.Net.DocumentMapper
                     continue;
                 }
 
+                // Handle Dictionary<TKey, TValue> — stored as {PropertyName}.{key} fields
+                if (propertyInfo.IsPropertyADictionary())
+                {
+                    var (keyType, valueType) = propertyInfo.GetDictionaryTypes();
+
+                    // Only string keys are supported for field name encoding
+                    if (keyType != typeof(string))
+                    {
+                        continue;
+                    }
+
+                    var prefix = propertyInfo.Name;
+                    var dictFields = fields
+                        .Where(x =>
+                        {
+                            var parts = x.Name.Split('.');
+                            return parts.Length > level + 1 && parts[level].Equals(prefix);
+                        })
+                        .ToList();
+
+                    if (!dictFields.Any())
+                    {
+                        continue;
+                    }
+
+                    var dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                    var dictionary = (IDictionary)Activator.CreateInstance(dictionaryType);
+
+                    foreach (var dictField in dictFields)
+                    {
+                        var parts = dictField.Name.Split('.');
+                        var entryKey = parts[level + 1];
+                        var rawValue = dictField.GetStringValue();
+                        var parsedValue = valueType.IsPrimitiveType()
+                            ? Parse(rawValue, valueType)
+                            : null;
+
+                        if (parsedValue != null)
+                        {
+                            dictionary[entryKey] = parsedValue;
+                        }
+                    }
+
+                    propertyInfo.SetValue(parent, dictionary);
+                    continue;
+                }
+
                 if (propertyInfo.IsPropertyACollection())
                 {
                     var listFields =
@@ -240,6 +287,30 @@ namespace Lucene.Net.DocumentMapper
                 string name = !string.IsNullOrEmpty(prefix)
                     ? $"{prefix}.{propertyInfo.Name}"
                     : propertyInfo.Name;
+
+                // Handle Dictionary<string, TPrimitive> — each entry becomes a {name}.{key} field
+                if (propertyInfo.IsPropertyADictionary())
+                {
+                    var (keyType, valueType) = propertyInfo.GetDictionaryTypes();
+
+                    // Only string keys are supported for field name encoding
+                    if (keyType != typeof(string) || !valueType.IsPrimitiveType())
+                    {
+                        continue;
+                    }
+
+                    var dictionary = (IDictionary)propertyValue;
+                    foreach (DictionaryEntry entry in dictionary)
+                    {
+                        var entryName = $"{name}.{entry.Key}";
+                        var entryPropertyInfo = new DictionaryValuePropertyInfo(propertyInfo, valueType);
+                        var f = GetFieldFromValue(entryPropertyInfo, entry.Value, entryName);
+                        if (f == null) continue;
+                        fields.Add(f);
+                    }
+
+                    continue;
+                }
 
                 if (propertyInfo.IsPropertyACollection())
                 {
